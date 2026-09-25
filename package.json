@@ -1,8 +1,8 @@
 {
   "name": "tictactoe-vscode",
-  "displayName": "TicTacToe",
-  "description": "VS Code 里的井字棋（Tic-Tac-Toe）小游戏：普通 / 超级 / 终极三种玩法，简单 / 普通 / 困难三档难度，与电脑对战。",
-  "version": "0.1.0",
+  "displayName": "TicTacToe for VSCode",
+  "description": "VS Code 里的井字棋（Tic-Tac-Toe）小游戏：普通 / 超级 / 终极三种玩法，简单 / 普通 / 困难三档难度，支持与电脑对战和局域网联机对战。",
+  "version": "0.2.0",
   "publisher": "zhanwangfeng",
   "license": "MIT",
   "icon": "resources/icon.png",
@@ -17,8 +17,15 @@
     "井字棋",
     "game",
     "游戏",
-    "对战"
+    "对战",
+    "联机",
+    "局域网",
+    "multiplayer"
   ],
+  "galleryBanner": {
+    "color": "#3a7afe",
+    "theme": "dark"
+  },
   "files": [
     "out",
     "resources",
@@ -31,9 +38,14 @@
     "onView:tictactoe.tree",
     "onCommand:tictactoe.open",
     "onCommand:tictactoe.restart",
-    "onCommand:tictactoe.toggleSound"
+    "onCommand:tictactoe.toggleSound",
+    "onCommand:tictactoe.multiCreate",
+    "onCommand:tictactoe.multiJoin"
   ],
   "main": "./out/extension.js",
+  "extensionKind": [
+    "ui"
+  ],
   "contributes": {
     "viewsContainers": {
       "activitybar": [
@@ -66,6 +78,16 @@
       {
         "command": "tictactoe.toggleSound",
         "title": "TicTacToe: 切换音效"
+      },
+      {
+        "command": "tictactoe.multiCreate",
+        "title": "TicTacToe: 联机 - 创建房间",
+        "icon": "$(radio-tower)"
+      },
+      {
+        "command": "tictactoe.multiJoin",
+        "title": "TicTacToe: 联机 - 加入房间",
+        "icon": "$(sign-in)"
       }
     ],
     "menus": {
@@ -87,9 +109,11 @@
   "devDependencies": {
     "@types/node": "^26.2.0",
     "@types/vscode": "^1.85.0",
+    "@types/ws": "^8.18.1",
     "@vscode/vsce": "^3.9.2",
     "esbuild": "^0.23.1",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "ws": "^8.21.3"
   },
   "repository": {
     "type": "git",

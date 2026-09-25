@@ -1,8 +1,12 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs';
+import { LanMultiplayer } from './common';
 
 type Difficulty = 'easy' | 'normal' | 'hard';
 type Mode = 'normal' | 'super' | 'ultimate';
+
+/** 联机房间固定端口（局域网 1v1），可在防火墙中放行。 */
+const MULTI_PORT = 18901;
 
 interface Options {
   difficulty: Difficulty;
@@ -50,6 +54,18 @@ function buildRoot(ctx: vscode.ExtensionContext): TreeNode[] {
       label: '当前设置',
       description: `${DIFF_LABEL[opt.difficulty]} · ${opt.humanFirst ? '你先手' : '电脑先'} · ${MODE_LABEL[opt.mode]}`,
       command: 'tictactoe.open'
+    },
+    {
+      id: 'multiCreate',
+      label: '联机：创建房间',
+      description: `端口 ${MULTI_PORT}`,
+      command: 'tictactoe.multiCreate'
+    },
+    {
+      id: 'multiJoin',
+      label: '联机：加入房间',
+      description: '输入 IP:端口',
+      command: 'tictactoe.multiJoin'
     }
   ];
 }
@@ -69,7 +85,9 @@ class TicTacToeTreeDataProvider implements vscode.TreeDataProvider<TreeNode> {
     item.iconPath = new vscode.ThemeIcon(
       element.id === 'open' ? 'play-circle' :
       element.id === 'restart' ? 'refresh' :
-      element.id === 'opts' ? 'settings-gear' : 'unmute'
+      element.id === 'opts' ? 'settings-gear' :
+      element.id === 'multiCreate' ? 'radio-tower' :
+      element.id === 'multiJoin' ? 'sign-in' : 'unmute'
     );
     item.tooltip = element.description ? `${element.label} · ${element.description}` : element.label;
     return item;
@@ -82,6 +100,7 @@ class TicTacToeTreeDataProvider implements vscode.TreeDataProvider<TreeNode> {
 
 let panel: vscode.WebviewPanel | undefined;
 let provider: TicTacToeTreeDataProvider | undefined;
+let multi: LanMultiplayer | undefined;
 
 // 读取 src/webview/game.html，用扩展保存的选项覆盖默认值后作为 webview 内容
 function getWebviewContent(context: vscode.ExtensionContext): string {
@@ -153,6 +172,7 @@ export function activate(context: vscode.ExtensionContext) {
       const on = !getSoundOn(context);
       await context.globalState.update(SOUND_KEY, on);
       panel?.webview.postMessage({ type: 'setSound', on });
+      multi?.postToWebview({ type: 'setSound', on });   // 联机面板内无音效按钮，统一由侧栏控制
       provider?.refresh();
     })
   );
@@ -160,6 +180,42 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.window.registerTreeDataProvider('tictactoe.tree', provider)
   );
+
+  // ---------- 局域网联机（1v1）：复用 src/common 的联机桥接模块 ----------
+  multi = new LanMultiplayer({
+    context,
+    commandPrefix: 'tictactoe',
+    viewTypeHost: 'tictactoe.multiHost',
+    viewTypeClient: 'tictactoe.multiClient',
+    port: MULTI_PORT,
+    maxPeers: 1,
+    webviewHtmlPath: (ctx) => vscode.Uri.joinPath(ctx.extensionUri, 'src', 'webview', 'multi.html'),
+    // 注入角色 / 地址 / 端口 / 音效开关；房主 X、加入方 O，棋盘坐标一致，无需镜像
+    buildBootstrap: (p) => ({ ...p, soundOn: getSoundOn(context) }),
+    i18n: {
+      roomCreated: (ip, port) => `房间已创建！请让对手加入房间：${ip}:${port}`,
+      portInUse: (port) => `端口 ${port} 已被占用，请先关闭其他房间或换端口重试。`,
+      connectFailed: (err) => `连接房间失败: ${err}`,
+      connectTimeout: (ms) => `连接超时：${ms}ms 内未连上，请检查 IP/端口/防火墙/是否同一局域网。`,
+      joinPrompt: () => '请输入房主的 IP:端口（例如 192.168.1.10:18901）',
+      invalidAddress: (raw) => `地址格式错误：${raw}，请使用 IP:端口 格式`,
+    },
+    // 音效开关属于本地偏好，不转发给对手
+    onWebviewMessage: (msg) => {
+      if (msg.type === 'sound') {
+        const on = !!msg.on;
+        void context.globalState.update(SOUND_KEY, on);
+        provider?.refresh();
+        panel?.webview.postMessage({ type: 'setSound', on });
+        return true;
+      }
+      return false;
+    },
+  });
+  context.subscriptions.push(multi.registerCommands());
 }
 
-export function deactivate() {}
+export function deactivate() {
+  multi?.dispose();
+  multi = undefined;
+}
