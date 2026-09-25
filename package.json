@@ -1,0 +1,98 @@
+{
+  "name": "tictactoe-vscode",
+  "displayName": "TicTacToe",
+  "description": "VS Code 里的井字棋（Tic-Tac-Toe）小游戏：普通 / 超级 / 终极三种玩法，简单 / 普通 / 困难三档难度，与电脑对战。",
+  "version": "0.1.0",
+  "publisher": "zhanwangfeng",
+  "license": "MIT",
+  "icon": "resources/icon.png",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "tictactoe",
+    "井字棋",
+    "game",
+    "游戏",
+    "对战"
+  ],
+  "files": [
+    "out",
+    "resources",
+    "src/webview",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "activationEvents": [
+    "onView:tictactoe.tree",
+    "onCommand:tictactoe.open",
+    "onCommand:tictactoe.restart",
+    "onCommand:tictactoe.toggleSound"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "tictactoe",
+          "title": "TicTacToe",
+          "icon": "resources/icon.png"
+        }
+      ]
+    },
+    "views": {
+      "tictactoe": [
+        {
+          "id": "tictactoe.tree",
+          "name": "游戏",
+          "icon": "resources/icon.png",
+          "contextualTitle": "TicTacToe"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "tictactoe.open",
+        "title": "TicTacToe: 打开游戏"
+      },
+      {
+        "command": "tictactoe.restart",
+        "title": "TicTacToe: 重新开始"
+      },
+      {
+        "command": "tictactoe.toggleSound",
+        "title": "TicTacToe: 切换音效"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "tictactoe.open",
+          "when": "view == tictactoe.tree",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc --noEmit -p ./ && esbuild src/extension.ts --bundle --platform=node --target=node16 --outfile=out/extension.js --external:vscode",
+    "watch": "tsc --noEmit -p ./ & esbuild src/extension.ts --bundle --platform=node --target=node16 --outfile=out/extension.js --external:vscode --watch",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.9.2",
+    "esbuild": "^0.23.1",
+    "typescript": "^5.3.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhanwangfeng/TicTacToeForVSCode.git"
+  }
+}
